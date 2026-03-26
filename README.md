@@ -49,6 +49,7 @@ public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24"]
 node_min_size        = 1
 node_desired_size    = 1
 node_max_size        = 2
+ci_role_arn          = "arn:aws:iam::123456789012:role/GitHubAction_terraform_EKS_Experiments_Demo"
 ```
 
 ## Local workflow (optional)
@@ -81,6 +82,7 @@ terraform apply tfplan
 ## Operational notes
 
 - EKS module is configured with `create_cloudwatch_log_group = false` to avoid Terraform failures when the cluster log group already exists from previous/partial runs.
+- If Terraform is executed from GitHub Actions, set `ci_role_arn` to the same role ARN used by OIDC (`AWS_ROLE_TO_ASSUME`). This grants that CI role cluster-level EKS access so Terraform can create namespaces and Helm releases.
 
 ## Connect to the EKS cluster
 
