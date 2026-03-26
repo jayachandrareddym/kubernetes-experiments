@@ -11,6 +11,10 @@ on:
         description: "Path to tfvars file"
         required: false
         default: ""
+      target_branch:
+        description: "Branch allowed to run apply"
+        required: true
+        default: "main"
 
 permissions:
   id-token: write
@@ -18,6 +22,8 @@ permissions:
 
 jobs:
   plan:
+    if: github.ref_name == github.event.inputs.target_branch
+    runs-on: ubuntu-latest
     runs-on: ubuntu-latest
 
     defaults:
@@ -49,7 +55,6 @@ jobs:
       - name: Terraform Plan
         run: |
           TFVARS_ARG=""
-
           if [ -n "${{ github.event.inputs.tfvars_file }}" ]; then
             if [ ! -f "${{ github.event.inputs.tfvars_file }}" ]; then
               echo "tfvars file not found: ${{ github.event.inputs.tfvars_file }}"
@@ -57,7 +62,6 @@ jobs:
             fi
             TFVARS_ARG="-var-file=${{ github.event.inputs.tfvars_file }}"
           fi
-
           terraform plan -out=tfplan $TFVARS_ARG
 
       - name: Upload plan artifact
