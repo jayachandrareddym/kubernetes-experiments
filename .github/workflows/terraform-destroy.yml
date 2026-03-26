@@ -7,6 +7,14 @@ on:
         description: "Path to tfvars file"
         required: false
         default: "terraform.tfvars"
+      target_branch:
+        description: "Branch allowed to run destroy"
+        required: true
+        default: "main"
+      confirm_destroy:
+        description: "Type DESTROY to continue"
+        required: true
+        default: ""
 
 permissions:
   id-token: write
@@ -14,6 +22,7 @@ permissions:
 
 jobs:
   destroy-plan:
+    if: github.ref_name == github.event.inputs.target_branch && github.event.inputs.confirm_destroy == 'DESTROY'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,6 +54,7 @@ jobs:
           path: terraform/tfdestroy
 
   destroy:
+    if: github.ref_name == github.event.inputs.target_branch && github.event.inputs.confirm_destroy == 'DESTROY'
     runs-on: ubuntu-latest
     needs: destroy-plan
     environment:
