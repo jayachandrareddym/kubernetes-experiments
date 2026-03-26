@@ -1,0 +1,98 @@
+name: Terraform Destroy (Approved)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tfvars_file:
+        description: "Path to tfvars file"
+        required: false
+        default: ""
+      target_branch:
+        description: "Branch allowed to run destroy"
+        required: true
+        default: "main"
+      confirm_destroy:
+        description: "Type DESTROY to continue"
+        required: true
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy-plan:
+    if: github.ref_name == github.event.inputs.target_branch && github.event.inputs.confirm_destroy == 'DESTROY'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy Plan
+        run: |
+          TFVARS_ARG=""
+          if [ -n "${{ github.event.inputs.tfvars_file }}" ]; then
+            if [ ! -f "${{ github.event.inputs.tfvars_file }}" ]; then
+              echo "tfvars file not found: ${{ github.event.inputs.tfvars_file }}"
+              exit 1
+            fi
+            TFVARS_ARG="-var-file=${{ github.event.inputs.tfvars_file }}"
+          fi
+          terraform plan -destroy -out=tfdestroy $TFVARS_ARG
+
+      - name: Upload destroy plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfdestroy
+          path: terraform/tfdestroy
+
+  destroy:
+    if: github.ref_name == github.event.inputs.target_branch && github.event.inputs.confirm_destroy == 'DESTROY'
+    runs-on: ubuntu-latest
+    needs: destroy-plan
+    environment:
+      name: production
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Download destroy plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfdestroy
+          path: terraform
+
+      - name: Terraform Destroy Apply
+        run: terraform apply -auto-approve tfdestroy
