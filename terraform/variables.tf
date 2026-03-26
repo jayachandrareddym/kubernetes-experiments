@@ -45,3 +45,9 @@ variable "node_max_size" {
   type        = number
   default     = 2
 }
+
+variable "ci_role_arn" {
+  description = "IAM role ARN used by CI (GitHub Actions) to run Terraform against EKS. When set, this role is granted EKS cluster-admin access."
+  type        = string
+  default     = null
+}
