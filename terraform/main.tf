@@ -43,6 +43,9 @@ module "eks" {
 
   cluster_endpoint_public_access = true
 
+  # Avoid create conflicts if /aws/eks/<cluster>/cluster log group already exists
+  create_cloudwatch_log_group = false
+
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
