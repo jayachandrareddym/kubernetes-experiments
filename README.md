@@ -38,7 +38,7 @@ It includes:
 
 ## Configure Terraform variables
 
-Create `terraform/terraform.tfvars` (example):
+Create `terraform/terraform.tfvars` (example, optional for CI if defaults are enough):
 
 ```hcl
 aws_region           = "us-east-1"
@@ -67,14 +67,14 @@ terraform apply tfplan
 ### 1) Plan + approved apply
 - Trigger: `workflow_dispatch`
 - Runs only when the workflow is started from the configured `target_branch` (default: `main`).
-- Job 1 runs `terraform plan` and uploads plan artifact.
+- Job 1 runs `terraform plan` (uses `tfvars_file` only when provided) and uploads plan artifact.
 - Job 2 (`apply`) requires approval through the `production` environment.
 - After approval, plan artifact is downloaded and applied.
 
 ### 2) Approved destroy
 - Trigger: `workflow_dispatch`
 - Runs only when started from `target_branch` (default: `main`) **and** `confirm_destroy` is exactly `DESTROY`.
-- Job 1 creates a destroy plan.
+- Job 1 creates a destroy plan (uses `tfvars_file` only when provided).
 - Job 2 (`destroy`) requires approval through the `production` environment.
 - After approval, destroy plan is applied.
 

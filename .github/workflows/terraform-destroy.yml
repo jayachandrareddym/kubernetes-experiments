@@ -6,7 +6,7 @@ on:
       tfvars_file:
         description: "Path to tfvars file"
         required: false
-        default: "terraform.tfvars"
+        default: ""
       target_branch:
         description: "Branch allowed to run destroy"
         required: true
@@ -45,7 +45,16 @@ jobs:
         run: terraform init
 
       - name: Terraform Destroy Plan
-        run: terraform plan -destroy -out=tfdestroy -var-file="${{ github.event.inputs.tfvars_file }}"
+        run: |
+          TFVARS_ARG=""
+          if [ -n "${{ github.event.inputs.tfvars_file }}" ]; then
+            if [ ! -f "${{ github.event.inputs.tfvars_file }}" ]; then
+              echo "tfvars file not found: ${{ github.event.inputs.tfvars_file }}"
+              exit 1
+            fi
+            TFVARS_ARG="-var-file=${{ github.event.inputs.tfvars_file }}"
+          fi
+          terraform plan -destroy -out=tfdestroy $TFVARS_ARG
 
       - name: Upload destroy plan artifact
         uses: actions/upload-artifact@v4
